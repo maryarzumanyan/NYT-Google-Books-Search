@@ -3,6 +3,9 @@ const express = require("express");
 const mongoose = require("mongoose");
 const routes = require("./routes");
 const app = express();
+var http = require("http").Server(app);
+var io = require("socket.io")(http);
+
 const PORT = process.env.PORT || 3001;
 
 // Configure body parsing for AJAX requests
@@ -25,7 +28,18 @@ mongoose.connect(
   }
 );
 
+io.on("connection", function(socket) {
+  // Some client is connected.
+  console.log("User connected.");
+  socket.on("save", function(title) {
+    // This client reported a "save" event.
+    console.log("Book saved.", title);
+    // Broadcast this event via "saved" to other connected clients.
+    socket.broadcast.emit("saved", title);
+  });
+});
+
 // Start the API server
-app.listen(PORT, () =>
+http.listen(PORT, function(){
   console.log(`🌎  ==> API Server now listening on PORT ${PORT}!`)
-);
+});

@@ -7,13 +7,34 @@ import Footer from "../components/Footer";
 import API from "../utils/API";
 import { Col, Row, Container } from "../components/Grid";
 import { List } from "../components/List";
+import io from "socket.io-client";
 
 class Home extends Component {
-  state = {
-    books: [],
-    q: "",
-    message: "Search For A Book To Begin!"
-  };
+  constructor() {
+    super(); // We must call super() as a first statement
+    console.log("Constructed!");
+
+    const socket = io(); // We need to initialize a connection to server.
+    socket.on("connect", (s) => {
+      console.log("Connected!");
+    });
+
+    // We want to listen to "saved" events coming from server so do some UI
+    socket.on("saved", this.newBookArrived);
+
+    // Finally, we initialize React state and put socket in there.
+    this.state = {
+      books: [],
+      q: "",
+      message: "Search For A Book To Begin!",
+      socket
+    };
+  }
+
+  newBookArrived(title) {
+    console.log("New Book!", title);
+    alert("New book is saved!! It's '" + title + "'");
+  }
 
   handleInputChange = event => {
     const { name, value } = event.target;
@@ -54,6 +75,9 @@ class Home extends Component {
       description: book.volumeInfo.description,
       image: book.volumeInfo.imageLinks.thumbnail
     }).then(() => this.getBooks());
+
+    // Report title to the server via "save" event.
+    this.state.socket.emit("save", book.volumeInfo.title);
   };
 
   render() {
